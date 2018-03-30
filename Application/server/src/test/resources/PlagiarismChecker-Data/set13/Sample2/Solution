@@ -1,0 +1,299 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+public class PageRank {
+
+	
+
+	public static void main(String[] args) throws 
+	                             IOException,FileNotFoundException {
+		HashMap<String, Set<String>>Map= new HashMap<String,Set<String>>();
+		HashSet<String> Page = new HashSet<String>();
+		HashMap<String, Integer>Lq= new HashMap<String,Integer>();
+		HashMap<String, Float>pageRank= new HashMap<String,Float>();
+		HashMap<String, Float>newPRp= new HashMap<String,Float>();
+		HashMap<String, Integer>inlinkcount= new HashMap<String,Integer>();
+		HashSet<String> S = new HashSet<String>();
+		List <Float> perplexity= new ArrayList<Float>() ;
+	
+		float count=0;
+		float N=0;
+		float flag=0;
+		float n=0;
+		double d=0.85;
+		String line;
+		String filename = "in.txt";
+		
+		FileReader filereader = new FileReader(filename);
+		BufferedReader b = new BufferedReader(filereader);
+		
+		while((line = b.readLine())!=null )
+		{
+			String links[] = line.split(" ");
+			HashSet<String> inLinks = new HashSet<String>
+			(Arrays.asList((Arrays.copyOfRange(links,1,links.length))));
+			Page.add(links[0]);
+			Map.put(links[0], inLinks);
+		}
+		
+		for(String p : Page){
+		inlinkcount.put(p, Map.get(p).size());
+		}
+		
+		for (String p : Page)
+		{
+			Set<String> inLinks = Map.get(p);
+			if(inLinks.size()==0)
+			{
+				flag++;
+			}
+			
+		for(String inLink : inLinks)
+		{
+			Integer noOfOutLinks = Lq.get(inLink);
+				if(noOfOutLinks == null)
+				{
+					Lq.put(inLink, new Integer(1));	
+				}
+				else 
+				{
+				Lq.put(inLink, new Integer(noOfOutLinks.intValue() + 1));
+				}
+			}	
+		}
+		
+		for (String p : Page)
+		{
+			if(!Lq.containsKey(p))
+				Lq.put(p, new Integer(0));
+		}
+		
+		for(String p : Page)
+		{
+			if(Lq.get(p) == 0)
+			{
+				S.add(p);
+				Lq.put(p, new Integer(0));
+			}
+		}
+		
+		N=Page.size();
+		double entropy=0;
+		boolean convergence=false;
+		
+/***************ALGORITHM IMPLEMENTATION**********/		
+		// foreach page p in P
+		// PR(p) = 1/N                          /* initial value */
+
+		// while PageRank has not converged do
+		// sinkPR = 0
+		// foreach page p in S                  /* calculate total sink PR */
+		// sinkPR += PR(p)
+	    // foreach page p in P
+		// newPR(p) = (1-d)/N                 	/* teleportation */
+	    // newPR(p) += d*sinkPR/N             	/* spread remaining sink PR evenly */
+		// foreach page q in M(p)             	/* pages pointing to p */
+		// newPR(p) += d*PR(q)/L(q)         	/* add share of PageRank from in-links */
+		// foreach page p
+		// PR(p) = newPR(p)
+		// return PR
+		// System.out.println("Pages in P"+P);
+/*************************************************/
+		
+		float prob=0,sinkPR=0;
+		int i=0;
+		double per=0;
+		
+		for(String p : Page)
+		{
+			n=(float)1/N;
+			pageRank.put(p,n);
+		}
+
+		PrintWriter ufoutput = null;
+			try
+			{
+				File ufile = new File("pagerank.txt");            
+				FileWriter uoutput = new FileWriter(ufile,true);
+				ufoutput = new PrintWriter(uoutput);
+				
+		while(!convergence) {
+			per = (float)Math.pow(2, entropy);
+			ufoutput.println("perplexity in each round"+" "+per);
+			perplexity.add((float) per);
+			
+			for(int j=0;j<perplexity.size();j++)
+			{
+			int g=perplexity.size();
+			
+			if(perplexity.size() >= 4)	
+			{
+				float value1 = perplexity.get(g-1);
+				float value2 = perplexity.get(g-2);
+				float value3 = perplexity.get(g-3);
+				float value4 = perplexity.get(g-4);
+				if(Math.abs(value1-value2)<1 && Math.abs(value2-value3)<1 &&
+						Math.abs(value3-value4)<1) {
+					convergence= true;
+				}
+			}
+			}
+			sinkPR=0;
+		
+			for(String p : S)
+				sinkPR = sinkPR + pageRank.get(p);
+				
+			for(String p : Page)
+			{
+				double t=0;
+			 	t= (1-d)/N;
+			 	t = t+ d*sinkPR/N;
+			
+			 if (Map.get(p).isEmpty())
+				newPRp.put(p,(float)t);
+
+			for(String q : Map.get(p))
+			{
+
+				double	a=pageRank.get(q);
+				double  c=Lq.get(q);
+			
+			if(c!=0)
+		    t = t + (double)(d*a/c);
+		    newPRp.put(p,(float)t);
+			}
+			}
+		
+			prob=0; 
+			entropy=0;count=0;
+			
+			for(String p : Page){
+				pageRank.put(p, newPRp.get(p));
+				count++;
+				prob= prob + pageRank.get(p);
+				entropy = entropy + pageRank.get(p)*Math.log(1/pageRank.get(p))/Math.log(2);
+			}			
+		}
+			int initial=0;
+			for(String p : Page){
+			if(pageRank.get(p)<n)
+			{
+				initial++;
+			}
+		}
+			
+		Map sortedMap = sortByValue(pageRank);
+		Map sortedMapinlink = sortByinlinkcount(inlinkcount);
+		
+		 double proportion_no_outlink=0;
+			proportion_no_outlink = (double)S.size()/Page.size();
+			 
+		 double proportion_no_inlink=0;
+			proportion_no_inlink = (double)flag/Page.size();
+				
+		 double proportion_initial=0;
+			proportion_initial = (double)initial/Page.size();
+
+				ufoutput.println(); 
+				ufoutput.println("total no of pages"+" "+count); 
+				ufoutput.println(); 
+				ufoutput.println("no.of sink nodes"+" "+S.size());
+				ufoutput.println(); 
+				ufoutput.println("no.of no inlinks"+" "+flag);
+				ufoutput.println(); 
+				ufoutput.println("converged"+" "+perplexity.size());
+				ufoutput.println(); 
+				ufoutput.println("perplexity"+" "+per);
+				ufoutput.println(); 
+				ufoutput.println("no of pages with page rank less than initial"+" "+initial);
+				ufoutput.println(); 
+				ufoutput.println("proportion of no outlinks"+" "+proportion_no_outlink); 
+				ufoutput.println(); 
+				ufoutput.println("proportion of no inlinks"+" "+proportion_no_inlink); 
+				ufoutput.println(); 
+				ufoutput.println("proportion of pages with page rank less than initial value"
+				+" "+proportion_initial); 
+				ufoutput.println("----------------------------------");
+                ufoutput.println("Printing the sorted list according to page rank(top 50)");
+                
+				int k=1;
+				 Iterator it = sortedMap.entrySet().iterator();
+				    while (it.hasNext()) 
+				    {
+				    	k++;
+				        Map.Entry pair = (Map.Entry)it.next();
+				        ufoutput.println(pair.getKey() + " = " + pair.getValue());
+				        ufoutput.println(k);
+				        it.remove(); 
+				        if(k>50)
+				        	break;
+				    }	
+				    
+				    int t = 0;
+				    Iterator iter = sortedMapinlink.entrySet().iterator();
+				    ufoutput.println("---------------------------------------");
+				    ufoutput.println("Printing the sorted list according to inlink count(top 50) ");
+				  //Printing the sorted list according to inlink count(top 50)
+				    while (iter.hasNext()) 
+				    {
+				    	t++;
+				        Map.Entry pair = (Map.Entry)iter.next();
+				        //System.out.println(pair.getKey() + " = " + pair.getValue());
+				        ufoutput.println(pair.getKey() + " = " + pair.getValue());
+				        ufoutput.println(t);
+				        iter.remove(); // avoids a ConcurrentModificationException
+				        if(t>50)
+				        	break;
+				    }		
+				    
+				    ufoutput.print("printing all pages according to their page ranks");
+				    while (it.hasNext()) 
+				    {
+				        Map.Entry pair = (Map.Entry)it.next();   
+				        ufoutput.println(pair.getKey() + " = " + pair.getValue());
+				        it.remove();
+				    }			
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+			}
+			finally{
+				if(ufoutput!=null){
+					ufoutput.close();
+				}
+			}
+		b.close();		
+	}
+
+	private static Map sortByinlinkcount(HashMap<String, Integer> inlinkcount) {
+		Map sortedMapinlink = new TreeMap(new ValueComparator(inlinkcount));
+		sortedMapinlink.putAll(inlinkcount);
+		return sortedMapinlink;
+	}
+
+	private static Map sortByValue(HashMap<String, Float> PRp) {
+		Map sortedMap = new TreeMap(new ValueComparator(PRp));
+		sortedMap.putAll(PRp);
+		return sortedMap;
+	}
+	
+	
+
+}
+
+

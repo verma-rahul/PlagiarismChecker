@@ -1,0 +1,417 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+public class PageRank {
+
+	
+
+	public static void main(String[] args) throws 
+	                             IOException,FileNotFoundException {
+		// TODO Auto-generated method stub
+	
+		//creating the given sets
+		HashMap<String, Set<String>>Mp= new HashMap<String,Set<String>>();
+		
+		HashSet<String> P = new HashSet<String>();
+		
+		HashMap<String, Integer>Lq= new HashMap<String,Integer>();
+		
+		HashMap<String, Float>PRp= new HashMap<String,Float>();
+		
+		HashMap<String, Float>newPRp= new HashMap<String,Float>();
+		
+		HashMap<String, Integer>inlinkcount= new HashMap<String,Integer>();
+		
+		HashSet<String> S = new HashSet<String>();
+		
+		List <Float> perplexity= new ArrayList<Float>() ;
+	
+		int count=0,N=0,flag=0;
+				float n=0;
+		//teleportation factor
+				double d=0.85;
+		
+		
+		
+		String line;
+		//input file
+		String filename = "inlinks.txt";
+		
+FileReader filereader = new FileReader(filename);
+		
+		BufferedReader b = new BufferedReader(filereader);
+		
+		while((line = b.readLine())!=null )
+		{
+			
+			
+		
+			//first coloumn will be the keys
+			String links[] = line.split(" ");
+			//rest are the inlinks
+			HashSet<String> inLinks = new HashSet<String>
+			(Arrays.asList((Arrays.copyOfRange(links,1,links.length))));
+			
+			//list pf all pages
+			P.add(links[0]);
+			
+		   //all pages and pages directing to them
+			Mp.put(links[0], inLinks);
+			//System.out.println("Mp->"+Mp);
+			
+		}
+		
+		//pages and no of their inlinks
+		for(String p : P){
+		inlinkcount.put(p, Mp.get(p).size());
+		}
+		
+      
+		 
+		for (String p : P)
+		{
+			Set<String> inLinks = Mp.get(p);
+			
+			//no.of pages without inlinks
+			if(inLinks.size()==0)
+			{
+				flag++;
+				
+			}
+			//no of outlinks calculation
+			for(String inLink : inLinks)
+			{
+				
+				Integer noOfOutLinks = Lq.get(inLink);
+			//if initially the Lp set is empty 
+				// and found an page in  the inlinks
+				//send it to Lp set and set one for that link
+				if(noOfOutLinks == null)
+				{
+					
+					Lq.put(inLink, new Integer(1));
+					
+				}
+				else 
+				{
+					//else send the page to the key set of Lp
+					// and increment the no.of outlinks for that page
+				Lq.put(inLink, new Integer(noOfOutLinks.intValue() + 1));
+				
+				}
+			}
+			
+			
+			
+		}
+		
+		for (String p : P)
+		{
+			if(!Lq.containsKey(p))
+				Lq.put(p, new Integer(0));
+		}
+		
+		
+		//Sink nodes calculation
+		//if no out link add it to sink node set
+		for(String p : P)
+		{
+			if(Lq.get(p) == 0)
+			{
+				S.add(p);
+				Lq.put(p, new Integer(0));
+			}
+		}
+		
+		System.out.println("done sink nodes");
+		System.out.println("no inlinks"+flag);
+		
+		N=P.size();
+		double entropy=0;
+		boolean convergence=false;
+		
+/***************ALGORITHM IMPLEMENTATION**********/		
+		//foreach page p in P
+		  //PR(p) = 1/N                          /* initial value */
+
+		//while PageRank has not converged do
+		 // sinkPR = 0
+		  //foreach page p in S                  /* calculate total sink PR */
+		    //sinkPR += PR(p)
+		  //foreach page p in P
+		    //newPR(p) = (1-d)/N                 /* teleportation */
+		    //newPR(p) += d*sinkPR/N             /* spread remaining sink PR evenly */
+		    //foreach page q in M(p)             /* pages pointing to p */
+		      //newPR(p) += d*PR(q)/L(q)         /* add share of PageRank from in-links */
+		  //foreach page p
+		    //PR(p) = newPR(p)
+		//return PR
+		//System.out.println("Pages in P"+P);
+		
+		float prob=0,sinkPR=0;
+		int i=0;
+		double per=0;
+		
+		for(String p : P)
+		{
+			n=(float)1/N;
+			PRp.put(p,n);
+			
+		}
+		
+		
+		 PrintWriter ufoutput = null;
+			try
+			{
+				File ufile = new File("pagerank.txt");            
+				FileWriter uoutput = new FileWriter(ufile,true);
+				ufoutput = new PrintWriter(uoutput);
+		
+		while(!convergence)
+		{
+			
+			//PERPLEXITY calculation and
+			//into the perplexity array list
+			per = (float)Math.pow(2, entropy);
+			ufoutput.println("perplexity in each round"+" "+per);
+			perplexity.add((float) per);
+			
+			for(int j=0;j<perplexity.size();j++)
+			{
+			
+			int g=perplexity.size();
+			//if loop only when there are atleast four values 
+			// in the perplexity list
+			if(perplexity.size() >= 4)	
+			{
+				//four values of every list
+				float value1 = perplexity.get(g-1);
+				float value2 = perplexity.get(g-2);
+				float value3 = perplexity.get(g-3);
+				float value4 = perplexity.get(g-4);
+				
+				
+				//if absolute difference of each pair is less than 1 then 
+				// its converged
+				if(Math.abs(value1-value2)<1 && Math.abs(value2-value3)<1 &&
+						Math.abs(value3-value4)<1)
+				{
+					
+					convergence= true;
+					
+				}
+				
+			}
+			}
+		
+			
+			 sinkPR=0;
+			//page rank of sinks
+			
+			for(String p : S)
+			{
+				
+				sinkPR = sinkPR + PRp.get(p);
+			}	
+			
+			
+			for(String p : P)
+			{
+				double t=0;
+
+			 	t= (1-d)/N;
+			 	
+		
+			 	t = t+ d*sinkPR/N;
+
+			 	 	
+			if (Mp.get(p).isEmpty())
+			{
+				
+				newPRp.put(p,(float)t);
+			}
+			
+			for(String q : Mp.get(p))
+			{
+		
+		
+			double	a=PRp.get(q);
+			
+			
+		    double  c=Lq.get(q);
+		   
+		   
+		    
+		    if(c!=0)
+		    t = t + (double)(d*a/c);
+
+		    newPRp.put(p,(float)t);
+		  
+			}
+			}
+			
+			prob=0; 
+			entropy=0;count=0;
+			//FINAL PAGE RANK
+			for(String p : P){
+				PRp.put(p, newPRp.get(p));
+				//System.out.println("newPrp"+newPRp);
+				count++;
+				prob= prob + PRp.get(p);
+				//ENTROPY
+				entropy = entropy + PRp.get(p)*Math.log(1/PRp.get(p))/Math.log(2);
+			}
+			
+			
+			
+
+			
+		}
+			System.out.println("Prob"+prob);
+			System.out.println("converged"+perplexity.size());
+			System.out.println("perplexity"+per);
+		
+			//if the page rank of pages are less than
+			//their initial page rank
+			int initial=0;
+			for(String p : P){
+			if(PRp.get(p)<n)
+			{
+				initial++;
+			}
+		}
+			System.out.println("initial"+initial);
+		
+		//sorting
+		Map sortedMap = sortByValue(PRp);
+		Map sortedMapinlink = sortByinlinkcount(inlinkcount);
+    
+		 double proportion_no_outlink=0;
+			proportion_no_outlink = (double)S.size()/P.size();
+			 
+			double proportion_no_inlink=0;
+				proportion_no_inlink = (double)flag/P.size();
+				
+				double proportion_initial=0;
+				proportion_initial = (double)initial/P.size();
+			
+		
+				ufoutput.println(); 
+				ufoutput.println("total no of pages"+" "+count); 
+				ufoutput.println(); 
+				ufoutput.println("no.of sink nodes"+" "+S.size());
+				ufoutput.println(); 
+				ufoutput.println("no.of no inlinks"+" "+flag);
+				ufoutput.println(); 
+				ufoutput.println("converged"+" "+perplexity.size());
+				ufoutput.println(); 
+				ufoutput.println("perplexity"+" "+per);
+				ufoutput.println(); 
+				ufoutput.println("no of pages with page rank less than initial"+" "+initial);
+				ufoutput.println(); 
+				ufoutput.println("proportion of no outlinks"+" "+proportion_no_outlink); 
+				ufoutput.println(); 
+				ufoutput.println("proportion of no inlinks"+" "+proportion_no_inlink); 
+				ufoutput.println(); 
+				ufoutput.println("proportion of pages with page rank less than initial value"
+				+" "+proportion_initial); 
+				ufoutput.println("----------------------------------");
+				//Printing the sorted list according to page rank(top 50)
+                   ufoutput.println("Printing the sorted list according to page rank(top 50)");
+				int k=1;
+				 Iterator it = sortedMap.entrySet().iterator();
+				    while (it.hasNext()) 
+				    {
+				    	k++;
+				    	
+				        Map.Entry pair = (Map.Entry)it.next();
+				        //System.out.println(pair.getKey() + " = " + pair.getValue());
+				        ufoutput.println(pair.getKey() + " = " + pair.getValue());
+				        ufoutput.println(k);
+				        it.remove(); // avoids a ConcurrentModificationException
+				        if(k>50)
+				        	break;
+				    }	
+				    
+				    
+				    
+				    
+				    
+				    
+				    int t = 0;
+				    Iterator ite = sortedMapinlink.entrySet().iterator();
+				  
+				    ufoutput.println("---------------------------------------");
+				    ufoutput.println("Printing the sorted list according to inlink count(top 50) ");
+				  //Printing the sorted list according to inlink count(top 50)
+				    while (ite.hasNext()) 
+				    {
+				    	t++;
+				    	
+				        Map.Entry pair = (Map.Entry)ite.next();
+				        //System.out.println(pair.getKey() + " = " + pair.getValue());
+				        ufoutput.println(pair.getKey() + " = " + pair.getValue());
+				        ufoutput.println(t);
+				        ite.remove(); // avoids a ConcurrentModificationException
+				        if(t>50)
+				        	break;
+				    }		
+				
+				    
+				    
+				   ufoutput.print("printing all pages according to their page ranks");
+				    while (it.hasNext()) 
+				    {
+				    	
+				    	
+				        Map.Entry pair = (Map.Entry)it.next();
+				        
+				        ufoutput.println(pair.getKey() + " = " + pair.getValue());
+				       
+				        it.remove(); // avoids a ConcurrentModificationException
+				        
+				    }			
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+			}
+			finally{
+				if(ufoutput!=null){
+					ufoutput.close();
+				}
+			}
+		b.close();		
+	}
+
+	private static Map sortByinlinkcount(HashMap<String, Integer> inlinkcount) {
+		Map sortedMapinlink = new TreeMap(new ValueComparator(inlinkcount));
+		sortedMapinlink.putAll(inlinkcount);
+		return sortedMapinlink;
+	}
+
+	private static Map sortByValue(HashMap<String, Float> PRp) {
+		Map sortedMap = new TreeMap(new ValueComparator(PRp));
+		sortedMap.putAll(PRp);
+		return sortedMap;
+	}
+	
+	
+
+}
+
+

@@ -1,0 +1,85 @@
+import java.io.*;
+import java.util.*;
+import java.text.*;
+import java.math.*;
+import java.util.regex.*;
+
+public class Solution {
+
+    public static int[] arrayLeftRotation(int[] nums, int nLength, int kTimes) {
+    	
+    	kTimes = kTimes%nLength;
+    	
+        if(kTimes==0)
+         return nums;
+        
+        else{
+        	//reversing the whole array first
+        revUnique(0,nLength-1,nums);
+        
+        //reverse the first part of the array
+        // till required index.
+        revUnique(0,kTimes-1,nums);
+        
+        
+        //reverse the second part of the array to 
+        //get completely rotated array
+        revUnique(kTimes,nLength-1,nums);    
+        }
+        
+        for(int i=0;i<nLength;i++) {
+        	
+            System.out.print(nums[i]+" ");
+        
+        
+        }
+        
+        
+        return nums;
+        }
+    
+    
+    
+     static void revUnique(int first,int last,int[] nums){
+       
+    	 while(first<last){
+    		 
+            
+            //swapping with two variables
+            nums[first]=nums[first] ^ nums[last];
+            
+            nums[last] = nums[last]^nums[first];
+            
+            nums[first] = nums[first]^nums[last];
+            
+            first++;last--;
+        }
+    }
+    
+    
+    public static void main(String[] args) {
+    	
+        Scanner in = new Scanner(System.in);
+        int nLength = in.nextInt();
+        int kTimes = in.nextInt();
+        
+        int nums[] = new int[nLength];
+        
+        for(int i=0; i < nLength; i++){
+        
+        	nums[i] = in.nextInt();
+        
+        }
+      
+        int[] output = new int[nLength];
+        //calling for array rotation
+        output = arrayLeftRotation(nums, nLength, kTimes);
+        
+        for(int i = 0; i < nLength; i++)
+        
+        	System.out.print(output[i] + " ");
+      
+        System.out.println();
+      
+    }
+}

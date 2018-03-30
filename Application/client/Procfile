@@ -1,0 +1,2 @@
+web: react-scripts start
+api-java: spring run src\server\src\main\java\plagiarism\Application.java
